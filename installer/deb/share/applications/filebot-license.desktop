@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=@{application.name}
+Comment=Import @{license.description}
+MimeType=application/x-@{license.extension};@{license.mimetype}
+Exec=filebot --license %F
+Icon=filebot
+NoDisplay=true
+StartupNotify=true
+StartupWMClass=@{deb.application.class}
+X-Ubuntu-Gettext-Domain=@{package.name}

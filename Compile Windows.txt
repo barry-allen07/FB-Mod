@@ -1,0 +1,13 @@
+Compile Instructions Windows
+
+1) Install Latest Java JDK 10 and set on Path if not set
+2) Install Latest Apache ANT
+3) Install Latest Apache IVY
+4) Install Latest Wix Toolset
+
+Run the follwing commands on CMD
+
+ant resolve
+ant jar
+ant msi
+ant zip

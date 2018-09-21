@@ -1,0 +1,17 @@
+bin
+build
+ivy
+dist
+release
+
+
+makefile
+makefile.variables
+profile.properties
+
+.project
+.classpath
+.settings
+.externalToolBuilders
+
+.DS_Store

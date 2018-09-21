@@ -1,0 +1,2 @@
+#!/bin/sh
+ln -sf /Applications/FileBot.app/Contents/MacOS/filebot.sh /usr/local/bin/filebot

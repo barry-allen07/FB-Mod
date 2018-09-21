@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Menu
+Name=@{application.name}
+Tooltip=Common FileBot Actions
+Icon=filebot
+ItemsList=filebot-license;filebot-rename;filebot-subtitles;filebot-checksum;filebot-import;

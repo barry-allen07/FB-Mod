@@ -1,0 +1,29 @@
+[Desktop Entry]
+Type=Service
+Name=@{application.name}
+Icon=filebot
+ServiceTypes=KonqPopupMenu/Plugin
+Actions=Rename;Subtitles;Checksum;Import;
+MimeType=@{deb.application.mimetype}
+X-KDE-Priority=TopLevel
+X-KDE-Submenu=@{application.name}
+
+[Desktop Action Rename]
+Name=Rename
+Icon=edit-rename
+Exec=filebot --mode Rename %F
+
+[Desktop Action Subtitles]
+Name=Subtitles
+Icon=languages
+Exec=filebot --mode Subtitles %F
+
+[Desktop Action Checksum]
+Name=Checksum
+Icon=checkmark
+Exec=filebot --mode SFV %F
+
+[Desktop Action Import]
+Name=Import to Media Library
+Icon=utilities-terminal
+Exec=konsole -e @{deb.application.action.import} %F

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Import @{license.description}
+Tooltip=Import @{license.description}
+Profiles=License;
+
+[X-Action-Profile License]
+Name=Import @{license.description}
+MimeType=application/x-@{license.extension};@{license.mimetype}
+Exec=filebot --license %F
