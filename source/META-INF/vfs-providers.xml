@@ -1,0 +1,7 @@
+<providers>
+	<provider class-name="com.github.junrar.vfs2.provider.rar.RARFileProvider">
+		<scheme name="rar" />
+	</provider>
+	<extension-map extension="rar" scheme="rar" />
+	<mime-type-map mime-type="application/rar" scheme="rar" />
+</providers>

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# allow read/write in application home folder
+mkdir -m 777 "$SYNOPKG_PKGDEST/data"
+chown -R admin.users "$SYNOPKG_PKGDEST/data"
+
+# create /usr/local/bin/[package] program link
+mkdir -p "/usr/local/bin"
+ln -sf "$SYNOPKG_PKGDEST/$SYNOPKG_PKGNAME.sh" "/usr/local/bin/$SYNOPKG_PKGNAME"
+
+# create /usr/local/[package] link
+ln -sf "$SYNOPKG_PKGDEST" "/usr/local/$SYNOPKG_PKGNAME"
+
+# return successfully
+exit 0

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+	<Product Id='*' Name='@{application.name}' Manufacturer='@{package.developer}' Version='@{application.version}' UpgradeCode='86809B6B-E2E3-43EC-9351-D4D66CAF7864' Language='1033' Codepage='1252'>
+
+		<Package Description="FileBot Installer" Manufacturer='@{package.developer}' InstallerVersion='300' Compressed='yes' Platform="@{msi.package.platform}" />
+
+		<MajorUpgrade AllowDowngrades="yes" IgnoreRemoveFailure="yes" />
+
+		<Directory Id='TARGETDIR' Name='SourceDir'>
+			<Directory Id='@{msi.directory.id}' Name='Program Files'>
+				<Directory Id='INSTALLDIR' Name='@{application.name}'>
+
+					<Component Id='ApplicationStub' Guid='A7B21026-DA54-4AF8-9227-188565AB9C4E' Win64="@{msi.component.win64}">
+						<File Id='filebot.launcher.exe' Name='filebot.launcher.exe' Source='filebot.launcher.exe' KeyPath='yes'>
+							<Shortcut Id="shortcut.menu.filebot" Directory="ProgramMenuDir" Name="@{application.name}" Description="@{package.synopsis}" WorkingDirectory='INSTALLDIR' Icon="icon.ico" Advertise="no">
+								<ShortcutProperty Key="System.AppUserModel.ID" Value="@{application.name}" />
+							</Shortcut>
+							<Shortcut Id="shortcut.desktop" Directory="DesktopFolder" Name="@{application.name}" Description="@{package.synopsis}" WorkingDirectory='INSTALLDIR' Icon="icon.ico" Advertise="no">
+								<ShortcutProperty Key="System.AppUserModel.ID" Value="@{application.name}" />
+							</Shortcut>
+							<Shortcut Id="shortcut.sendto" Directory="SendToFolder" Name="@{application.name}" Description="@{package.synopsis}" WorkingDirectory='INSTALLDIR' Icon="icon.ico" Advertise="no">
+								<ShortcutProperty Key="System.AppUserModel.ID" Value="@{application.name}" />
+							</Shortcut>
+						</File>
+
+						<File Id='filebot.platform.launcher.exe' Name='filebot.platform.launcher.exe' Source='filebot.platform.launcher.exe'>
+							<Shortcut Id="shortcut.menu.filebot.platform" Directory="ProgramMenuDir" Name="FileBot (platform)" Description="Launch FileBot with platform-independent configuration" WorkingDirectory='INSTALLDIR' Icon="icon.ico" IconIndex="0" Advertise="no" />
+						</File>
+
+						<File Id='filebot.exe' Name='filebot.exe' Source='filebot.exe'>
+							<Shortcut Id="shortcut.menu.filebot.cmd" Directory="ProgramMenuDir" Name="FileBot (console)" Description="Launch FileBot with Debug Console" WorkingDirectory='INSTALLDIR' />
+						</File>
+
+						<File Id='filebot.launcher.l4j.ini' Name='filebot.launcher.l4j.ini' Source='filebot.launcher.l4j.ini' />
+						<File Id='filebot.platform.launcher.l4j.ini' Name='filebot.platform.launcher.l4j.ini' Source='filebot.platform.launcher.l4j.ini' />
+						<File Id='filebot.l4j.ini' Name='filebot.l4j.ini' Source='filebot.l4j.ini' />
+
+						<Environment Id="PATH" Name="PATH" Value="[INSTALLDIR]" Action="set" Part="last" Permanent="no" System="yes" />
+
+						<ProgId Id="ActivateLicense" Description="@{license.description}" Advertise="no">
+							<Extension Id="@{license.extension}" ContentType="@{license.mimetype}" Advertise="no">
+								<Verb Id="Open" Command="Activate License" TargetFile="filebot.launcher.exe" Argument='--license "%1"' />
+							</Extension>
+						</ProgId>
+
+						<Shortcut Id="shortcut.uninstall" Directory="ProgramMenuDir" Name="Uninstall FileBot" Description="Uninstall FileBot" Icon="icon.ico" Target="[SystemFolder]msiexec.exe" Arguments="/x [ProductCode]" Advertise="no" />
+					</Component>
+
+					<Directory Id="ApplicationBase" />
+				</Directory>
+			</Directory>
+
+			<Directory Id="ProgramMenuFolder" Name="Programs">
+				<Directory Id="ProgramMenuDir" Name="@{application.name}">
+					<Component Id="ProgramMenuDir" Guid="F3F0F1CB-E282-473A-BE8E-B7D325B3B4B0">
+						<RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+					</Component>
+				</Directory>
+			</Directory>
+
+			<Directory Id="DesktopFolder" Name="Desktop" />
+			<Directory Id="SendToFolder" Name="SendTo" />
+		</Directory>
+
+
+		<Feature Id='Complete' Title='FileBot' Description='The complete package.' Display='expand' ConfigurableDirectory='INSTALLDIR' Level='1'>
+			<ComponentGroupRef Id='ApplicationBase' />
+			<ComponentRef Id='ApplicationStub' />
+			<ComponentRef Id='ProgramMenuDir' />
+		</Feature>
+
+		<!-- The media table defines the location that the MSI will look to find source files during -->
+		<!-- installation or repair scenarios. In this case, the source files are in a cab file that will be -->
+		<!-- embedded directly into the MSI at build time. -->
+		<Media Id='1' Cabinet='FileBot.cab' EmbedCab='yes' CompressionLevel="@{msi.compression}" />
+
+		<!-- These properties define links that will appear in the Add/Remove Programs control panel when -->
+		<!-- this product is installed on the system. -->
+		<Property Id="ARPURLINFOABOUT" Value="@{package.homepage}" />
+
+		<!-- This property is used as the default installation directory, and the user can change this path -->
+		<!-- during setup. The Id must be set to WIXUI_INSTALLDIR and the value must match the directory Id -->
+		<!-- defined above that represents the root installation directory. -->
+		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+
+		<!-- This UIRef element specifies what WiXUI dialog set to use for the setup UI. This package uses -->
+		<!-- the WixUI_InstallDir dialog set, which provides a welcome page, a license agreement page, a -->
+		<!-- page to allow changing the installation path, an installation confirmation page, a progress -->
+		<!-- page and a completion page. Other dialog sets are available in the WiX toolset and are -->
+		<!-- described in more detail in the WiX documentation. -->
+		<UIRef Id="WixUI_InstallDir" />
+
+		<WixVariable Id="WixUIBannerBmp" Value="banner.bmp" />
+		<WixVariable Id="WixUIDialogBmp" Value="dialog.bmp" />
+		<WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+
+		<Icon Id="icon.ico" SourceFile="icon.ico" />
+		<Property Id="ARPPRODUCTICON" Value="icon.ico" />
+		<Property Id="REBOOT" Value="ReallySuppress" />
+		<Property Id="LicenseAccepted" Value="1" />
+	</Product>
+</Wix>

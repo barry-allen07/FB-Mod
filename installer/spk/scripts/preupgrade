@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# export user data
+DATA_TAR="/tmp/$SYNOPKG_PKGNAME.data.tgz"
+
+cd "$SYNOPKG_PKGDEST" && tar -cvzf "$DATA_TAR" "data/"
+
+exit 0

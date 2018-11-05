@@ -1,0 +1,11 @@
+Package: @{package.name}
+Version: @{application.version}
+Architecture: amd64
+Maintainer: @{package.developer} <@{package.maintainer}>
+Description: @{package.synopsis}
+ @{package.description}
+Homepage: @{package.homepage}
+Section: utils
+Priority: extra
+Suggests: @{deb.application.depends}
+Enhances: nautilus-actions

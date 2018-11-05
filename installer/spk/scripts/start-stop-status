@@ -1,0 +1,23 @@
+#!/bin/sh
+
+case "$1" in
+	start)
+		exit 0
+	;;
+
+	stop)
+		exit 0
+	;;
+
+	status)
+		if [ -x "/usr/local/bin/$SYNOPKG_PKGNAME" ] && [ -x "$SYNOPKG_PKGDEST/$SYNOPKG_PKGNAME.sh" ]; then
+			exit 0
+		else
+			exit 150
+		fi
+	;;
+
+	log)
+		exit 0
+	;;
+esac

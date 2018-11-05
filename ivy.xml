@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+	<info organisation="net.filebot" module="filebot" />
+	<dependencies>		
+
+		<!-- FileBot -->
+		<dependency rev="2.5.3" org="org.codehaus.groovy" name="groovy-all" />
+		<dependency rev="4.5.2" org="net.java.dev.jna" name="jna" />
+		<dependency rev="4.5.2" org="net.java.dev.jna" name="jna-platform" />
+		<dependency rev="2.33" org="args4j" name="args4j" />
+		<dependency rev="2.10.5" org="net.sf.ehcache" name="ehcache" />
+		<dependency rev="61.1" org="com.ibm.icu" name="icu4j" />
+		<dependency rev="1.11.3" org="org.jsoup" name="jsoup" />
+		<dependency rev="1.8" org="org.tukaani" name="xz" />
+		<dependency rev="2.3.0" org="javax.xml.bind" name="jaxb-api" />
+		<dependency rev="4.10.0" org="com.cedarsoftware" name="json-io" />
+		<dependency rev="2.6" org="commons-io" name="commons-io" />
+		<dependency rev="3.6" org="commons-net" name="commons-net" />
+		<dependency rev="1.7.25" org="org.slf4j" name="slf4j-jdk14" />
+		<dependency rev="1.10.0" org="net.java.dev.glazedlists" name="glazedlists_java16" />
+		<dependency rev="5.2" org="com.miglayout" name="miglayout-swing" />
+		<dependency rev="2.2" org="org.apache.commons" name="commons-vfs2" />
+		<dependency rev="2.0.0" org="com.github.junrar" name="junrar" />
+		<dependency rev="2.6.1" org="com.fifesoft" name="rsyntaxtextarea" />
+		<dependency rev="2.6.1" org="com.fifesoft" name="autocomplete" />
+		<dependency rev="9.20-2.00beta" org="net.sf.sevenzipjbinding" name="sevenzipjbinding" />
+		<dependency rev="9.20-2.00beta" org="net.sf.sevenzipjbinding" name="sevenzipjbinding-all-platforms" />
+		<dependency rev="0.6" org="com.optimaize.languagedetector" name="language-detector" />
+		<dependency rev="0.6.7" org="one.util" name="streamex" />
+		<dependency rev="9.0.0" org="org.controlsfx" name="controlsfx" />
+		<dependency rev="3.0.0" org="com.googlecode.lanterna" name="lanterna" />
+		<dependency rev="2.11.0" org="com.drewnoakes" name="metadata-extractor" />
+		<dependency rev="1.59" org="org.bouncycastle" name="bcprov-jdk15on" />
+		<dependency rev="4.2" org="org.imgscalr" name="imgscalr-lib" />
+
+		<!-- FileBot Scripting -->
+		<dependency rev="1.10.3" org="org.apache.ant" name="ant" />
+		<dependency rev="1.10.3" org="org.apache.ant" name="ant-launcher" />
+		<dependency rev="1.10.3" org="org.apache.ant" name="ant-commons-net" />
+		<dependency rev="1.10.3" org="org.apache.ant" name="ant-javamail" />
+		<dependency rev="1.10.3" org="org.apache.ant" name="ant-jsch" />
+		<dependency rev="2.4.0" org="org.apache.ivy" name="ivy" />
+		<dependency rev="1.6.1" org="com.sun.mail" name="javax.mail" />
+		<dependency rev="1.1.1" org="javax.activation" name="activation" />
+
+		<!-- FileBot Ant Build -->
+		<dependency rev="1.10.3" org="org.apache.ant" name="ant-junit" />
+		<dependency rev="0.6" org="net.filebot" name="ant-spk" />
+		<dependency rev="1.6" org="org.vafer" name="jdeb" />
+	</dependencies>
+</ivy-module>

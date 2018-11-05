@@ -1,0 +1,9 @@
+######################################################################
+# Define any package specific operations that shall be performed when
+# the package is installed.
+######################################################################
+
+pkg_post_install(){
+	mkdir -m 777 "$SYS_QPKG_DIR/data"
+	chown -R admin.administrators "$SYS_QPKG_DIR/data"
+}

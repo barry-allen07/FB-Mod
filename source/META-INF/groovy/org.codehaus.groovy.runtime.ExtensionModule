@@ -1,0 +1,4 @@
+moduleName=filebot-format
+moduleVersion=2.5.0
+extensionClasses=net.filebot.cli.ScriptShellMethods,net.filebot.format.ExpressionFormatMethods,org.apache.groovy.dateutil.extensions.DateUtilExtensions
+staticExtensionClasses=org.apache.groovy.dateutil.extensions.DateUtilStaticExtensions

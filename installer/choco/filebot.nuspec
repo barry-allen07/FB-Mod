@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+	<metadata>
+		<id>@{package.name}</id>
+		<title>@{application.name}</title>
+		<version>@{application.version}</version>
+		<authors>@{package.developer}</authors>
+		<owners>@{package.maintainer}</owners>
+		<summary>@{package.synopsis}</summary>
+		<description>@{package.description}</description>
+		<tags>filebot renamer plex kodi emby checksum crc32 md5 sha256 utility license admin</tags>
+		<iconUrl>@{link.image.logo}</iconUrl>
+		<projectUrl>@{package.homepage}</projectUrl>
+		<licenseUrl>https://github.com/filebot/filebot/blob/master/LICENSE.md</licenseUrl>
+		<packageSourceUrl>https://github.com/filebot/filebot/tree/master/installer/choco</packageSourceUrl>
+		<docsUrl>@{link.intro}</docsUrl>
+		<mailingListUrl>@{link.forums}</mailingListUrl>
+		<bugTrackerUrl>@{link.bugs}</bugTrackerUrl>
+		<releaseNotes>https://www.filebot.net/forums/viewforum.php?f=7</releaseNotes>
+		<copyright>@{tstamp.year} @{package.developer}</copyright>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+	</metadata>
+	<files>
+		<file src="tools\**" target="tools" />
+	</files>
+</package>

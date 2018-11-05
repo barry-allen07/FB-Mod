@@ -1,0 +1,36 @@
+name: @{package.name}
+version: @{application.version}
+summary: @{package.synopsis}
+description: @{package.description}
+
+confinement: strict
+grade: stable
+
+architectures: [amd64]
+
+apps:
+  filebot:
+    command: desktop-launch $SNAP/bin/filebot.sh
+    plugs: [unity7, opengl, x11, home, removable-media, network, network-bind, pulseaudio, gsettings]
+
+parts:
+  filebot:
+    plugin: dump
+    source: base
+    stage-packages:
+      - libxrender1
+      - libxext6
+      - libx11-6
+      - libxi6
+      - libxtst6
+      - libgnome-2-0
+      - libgnomevfs2-0
+      - gtk2-engines-murrine
+      - libcanberra-gtk-module
+      - hicolor-icon-theme
+      - xdg-utils
+      - libmediainfo0v5
+      - libchromaprint-tools
+      - curl
+    after:
+      - desktop-gtk2

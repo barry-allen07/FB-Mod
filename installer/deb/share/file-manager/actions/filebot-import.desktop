@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Import to Media Library
+Tooltip=Import to Media Library with FileBot
+Profiles=Media;
+
+[X-Action-Profile Media]
+Name=Import to Media Library
+MimeTypes=@{deb.application.mimetype}
+ExecutionMode=DisplayOutput
+Exec=@{deb.application.action.import} %F
