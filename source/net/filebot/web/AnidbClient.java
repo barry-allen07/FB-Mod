@@ -36,12 +36,25 @@ import net.filebot.CacheType;
 import net.filebot.Resource;
 import net.filebot.ResourceManager;
 
+import net.filebot.web.AbstractEpisodeListProvider;
+import net.filebot.web.Datasource;
+import net.filebot.web.Episode;
+import net.filebot.web.FloodLimit;
+import net.filebot.web.LocalSearch;
+import net.filebot.web.SearchResult;
+import net.filebot.web.SeriesInfo;
+import net.filebot.web.SimpleDate;
+import net.filebot.web.SortOrder;
+
 public class AnidbClient extends AbstractEpisodeListProvider {
 
 	private static final FloodLimit REQUEST_LIMIT = new FloodLimit(2, 5, TimeUnit.SECONDS); // no more than 2 requests within a 5 second window
 
 	private final String client;
 	private final int clientver;
+
+	// local AniDB search index
+	private final Resource<LocalSearch<SearchResult>> localIndex = Resource.lazy(() -> new LocalSearch<SearchResult>(getAnimeTitles(), SearchResult::getEffectiveNames));
 
 	public AnidbClient(String client, int clientver) {
 		this.client = client;
@@ -79,8 +92,6 @@ public class AnidbClient extends AbstractEpisodeListProvider {
 		return fetchSearchResult(query, locale);
 	}
 
-	// local AniDB search index
-	private final Resource<LocalSearch<SearchResult>> localIndex = Resource.lazy(() -> new LocalSearch<SearchResult>(getAnimeTitles(), SearchResult::getEffectiveNames));
 
 	@Override
 	public List<SearchResult> fetchSearchResult(String query, Locale locale) throws Exception {
@@ -212,6 +223,7 @@ public class AnidbClient extends AbstractEpisodeListProvider {
 	 * This method is overridden in {@link net.filebot.WebServices.AnidbClientWithLocalSearch} to fetch the Anime Index from our own host and not anidb.net
 	 */
 	public SearchResult[] getAnimeTitles() throws Exception {
+		//HashMap entriesByAnime;
 		// get data file (unzip and cache)
 		byte[] bytes = getCache("root").bytes("anime-titles.dat.gz", n -> new URL("http://anidb.net/api/" + n)).get();
 
@@ -219,12 +231,12 @@ public class AnidbClient extends AbstractEpisodeListProvider {
 		// type: 1=primary title (one per anime), 2=synonyms (multiple per anime), 3=shorttitles (multiple per anime), 4=official title (one per language)
 		Pattern pattern = Pattern.compile("^(?!#)(\\d+)[|](\\d)[|]([\\w-]+)[|](.+)$");
 
-		List<String> languageOrder = new ArrayList<String>();
+		ArrayList<String> languageOrder = new ArrayList<String>();
 		languageOrder.add("x-jat");
 		languageOrder.add("en");
 		languageOrder.add("ja");
 
-		List<String> typeOrder = new ArrayList<String>();
+		ArrayList<String> typeOrder = new ArrayList<String>();
 		typeOrder.add("1");
 		typeOrder.add("4");
 		typeOrder.add("2");
@@ -232,6 +244,8 @@ public class AnidbClient extends AbstractEpisodeListProvider {
 
 		// fetch data
 		Map<Integer, List<Object[]>> entriesByAnime = new HashMap<Integer, List<Object[]>>(65536);
+
+		//entriesByAnime = new HashMap(65536);
 
 		try (BufferedReader text = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))) {
 			text.lines().forEach(line -> {
@@ -258,7 +272,7 @@ public class AnidbClient extends AbstractEpisodeListProvider {
 		}
 
 		// build up a list of all possible AniDB search results
-		return entriesByAnime.entrySet().stream().map(it -> {
+		return (SearchResult[])entriesByAnime.entrySet().stream().map(it -> {
 			List<String> names = it.getValue().stream().sorted((a, b) -> {
 				for (int i = 0; i < a.length; i++) {
 					if (!a[i].equals(b[i])) {

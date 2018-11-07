@@ -366,10 +366,10 @@ class SubtitleAutoMatchDialog extends JDialog {
 		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 			SubtitleMapping mapping = (SubtitleMapping) value;
-			SubtitleDescriptorBean subtitleBean = mapping.getSelectedOption();
+			SubtitleDescriptorBean subtitleBean = mapping != null ? mapping.getSelectedOption() : null;
 
 			// render combobox for subtitle options
-			if (mapping.isEditable() && subtitleBean != null) {
+			if (mapping != null && mapping.isEditable() && subtitleBean != null) {
 				optionComboBox.setModel(new DefaultComboBoxModel(new Object[] { subtitleBean }));
 				return optionComboBox;
 			}
@@ -379,7 +379,7 @@ class SubtitleAutoMatchDialog extends JDialog {
 			setForeground(table.getForeground());
 
 			if (subtitleBean == null) {
-				if (mapping.getOptions().length == 0) {
+				if (mapping != null && mapping.getOptions().length == 0) {
 					// no subtitles found
 					setText("No subtitles found");
 					setIcon(null);
@@ -398,7 +398,7 @@ class SubtitleAutoMatchDialog extends JDialog {
 				// download in progress
 				setText(subtitleBean.getText());
 				setIcon(ResourceManager.getIcon("action.fetch"));
-			} else if (mapping.getSubtitleFile() != null) {
+			} else if (mapping != null && mapping.getSubtitleFile() != null) {
 				// download complete
 				setText(mapping.getSubtitleFile().getName());
 				setIcon(ResourceManager.getIcon("status.ok"));
