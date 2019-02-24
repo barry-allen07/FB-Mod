@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Rename
+Tooltip=Rename with FileBot
+Profiles=Media;
+
+[X-Action-Profile Media]
+Name=Rename
+MimeTypes=@{deb.application.mimetype}
+Exec=filebot --mode Rename %F

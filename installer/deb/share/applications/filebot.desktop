@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=@{application.name}
+Comment=@{package.synopsis}
+MimeType=@{deb.application.mimetype}
+Exec=filebot %F
+Icon=filebot
+Categories=@{deb.application.categories}
+StartupNotify=true
+StartupWMClass=@{deb.application.class}
+X-Ubuntu-Gettext-Domain=@{package.name}

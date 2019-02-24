@@ -1,0 +1,62 @@
+name: @{package.name}
+version: @{application.version}
+summary: @{package.synopsis}
+description: @{package.description}
+
+confinement: strict
+grade: stable
+
+architectures: [amd64]
+
+apps:
+  filebot:
+    command: desktop-launch $SNAP/bin/filebot.sh
+    plugs:
+      - desktop
+      - desktop-legacy
+      - unity7
+      - x11
+      - opengl
+      - gsettings
+      - home
+      - removable-media
+      - network
+      - network-bind
+
+plugs:
+  gtk-2-engines:
+    interface: content
+    target: $SNAP/lib/gtk-2.0
+    default-provider: gtk2-common-themes:gtk-2-engines
+  gtk-2-themes:
+    interface: content
+    target: $SNAP/share/themes
+    default-provider: gtk2-common-themes:gtk-2-themes
+  icon-themes:
+    interface: content
+    target: $SNAP/share/icons
+    default-provider: gtk-common-themes:icon-themes
+
+environment:
+  GTK_PATH: $SNAP/lib/gtk-2.0
+  GTK_DATA_PREFIX: $SNAP
+  XDG_DATA_DIRS: $SNAP/share:$XDG_DATA_DIRS
+
+parts:
+  filebot:
+    plugin: dump
+    source: base
+    build-packages:
+      - ca-certificates
+      - ca-certificates-java
+      - openjdk-8-jdk
+    stage-packages:
+      - openjdk-8-jre
+      - openjfx
+      - libmediainfo0v5
+      - libchromaprint-tools
+      - p7zip-full
+      - p7zip-rar
+      - xdg-utils
+    after:
+      - desktop-gtk2

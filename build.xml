@@ -1,0 +1,1036 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<project name="filebot" default="jar" xmlns:if="ant:if" xmlns:unless="ant:unless" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+	<!-- define source dirs -->
+	<property name="dir.source" location="${basedir}/source" />
+	<property name="dir.build" location="${basedir}/build" />
+	<property name="dir.dist" location="${basedir}/dist" />
+	<property name="dir.lib" location="${basedir}/lib" />
+	<property name="dir.website" location="${basedir}/website" />
+	<property name="dir.installer" location="${basedir}/installer" />
+	<property name="dir.cache" location="${basedir}/cache" />
+
+	<!-- import property files -->
+	<property file="${basedir}/profile.properties" />
+	<property file="${basedir}/app.properties" />
+
+	<!-- define release files -->
+	<property name="release" value="${application.name}_${application.version}" />
+	<property name="dir.release.index" location="${basedir}/release" />
+	<property name="dir.release" location="${dir.release.index}/${release}" />
+
+	<!-- define javafx version number based on app.properties -->
+	<property name="jfx.path" location="${basedir}/cache/javafx-sdk-${jfx.version}/lib" />
+
+	<!-- timestamp variables -->
+	<tstamp prefix="tstamp">
+		<format property="date" pattern="yyyy-MM-dd" />
+		<format property="year" pattern="yyyy" />
+	</tstamp>
+
+
+	<macrodef name="copy-replace" description="Copy text files and replace ant variables">
+		<attribute name="todir" />
+		<element name="filesets" implicit="yes" />
+		<sequential>
+			<copy todir="@{todir}" encoding="utf-8" overwrite="yes" verbose="yes">
+				<filesets />
+				<filterset begintoken="@{" endtoken="}">
+					<propertyset>
+						<propertyref builtin="all" />
+					</propertyset>
+				</filterset>
+				<filtermapper>
+					<replacetokens begintoken="@{" endtoken="}" propertiesResource="app.properties" />
+				</filtermapper>
+			</copy>
+		</sequential>
+	</macrodef>
+
+
+	<macrodef name="release-sign" description="Sign files with GnuPG">
+		<element name="filesets" implicit="yes" />
+		<sequential>
+			<apply executable="gpg" verbose="yes" failonerror="yes">
+				<arg line="--verbose --batch --yes --local-user ${package.maintainer}" />
+				<arg line="--armor --detach-sign" />
+				<srcfile />
+				<filesets />
+			</apply>
+		</sequential>
+	</macrodef>
+
+
+	<macrodef name="release-deploy" description="Upload files">
+		<attribute name="dir" />
+		<attribute name="todir" />
+		<element name="includes" implicit="yes" optional="yes" />
+		<sequential>
+			<scp todir="@{todir}" trust="yes" verbose="true" sftp="true" keyfile="${scp.keyfile}">
+				<fileset dir="@{dir}">
+					<includes />
+					<modified>
+						<param name="cache.cachefile" value="${dir.cache}/scp.cache" />
+					</modified>
+				</fileset>
+			</scp>
+		</sequential>
+	</macrodef>
+
+
+
+	<patternset id="pattern.jre">
+		<include name="**/lib/**" />
+		<include name="**/conf/**" />
+
+		<include name="**/java" />
+		<include name="**/MacOS/**" />
+		<include name="**/*.plist" />
+
+		<include name="**/java.exe" />
+		<include name="**/javaw.exe" />
+		<include name="**/*.dll" />
+
+		<exclude name="**/dtplugin/**" />
+		<exclude name="**/plugin2/**" />
+
+		<exclude name="**/*.zip" />
+
+		<exclude name="**/javafx.web.jar" />
+		<exclude name="**/javafx.media.jar" />
+		<exclude name="**/javafx.fxml.jar" />
+		<exclude name="**/javafx-swt.jar" />
+
+		<exclude name="**/*glib*" />
+		<exclude name="**/*fxplugins*" />
+		<exclude name="**/*avplugin*" />
+		<exclude name="**/*gstreamer*" />
+		<exclude name="**/*jfxmedia*" />
+		<exclude name="**/*jfxwebkit*" />
+	</patternset>
+
+
+	<macrodef name="get-windows-jre" description="Fetch and unpack JRE bundle (64-bit Windows)">
+		<attribute name="dest" />
+		<sequential>
+			<exec executable="powershell" dir="${dir.cache}" failonerror="no">
+				<arg line="-ExecutionPolicy bypass" />
+				<arg line="-File get-java.ps1" />
+			</exec>
+			<unzip src="${dir.cache}/openjdk-${jre.version}_windows-x64_bin.zip" dest="@{dest}">
+				<patternset refid="pattern.jre" />
+				<cutdirsmapper dirs="1" />
+			</unzip>
+			<exec executable="powershell" dir="${dir.cache}" failonerror="no">
+				<arg line="-ExecutionPolicy bypass" />
+				<arg line="-File get-jfx.ps1" />
+			</exec>
+			<unzip src="${dir.cache}/openjfx-${jfx.version}_windows-x64_bin-sdk.zip" dest="@{dest}/ext/modules">
+				<patternset refid="pattern.jre" />
+				<cutdirsmapper dirs="1" />
+			</unzip>
+		</sequential>
+	</macrodef>
+
+
+	<macrodef name="get-macos-jre" description="Fetch and unpack JRE bundle (64-bit Mac)">
+		<attribute name="dest" />
+		<sequential>
+			<exec executable="/bin/sh" dir="${dir.cache}" failonerror="no">
+				<arg line="get-java.sh" />
+			</exec>
+			<untar src="${dir.cache}/openjdk-${jre.version}_osx-x64_bin.tar.gz" dest="@{dest}" compression="gzip">
+				<patternset refid="pattern.jre" />
+				<cutdirsmapper dirs="1" />
+			</untar>
+			<exec executable="/bin/sh" dir="${dir.cache}" failonerror="no">
+				<arg line="get-jfx.sh" />
+			</exec>
+			<unzip src="${dir.cache}/openjfx-${jfx.version}_osx-x64_bin-sdk.zip" dest="@{dest}/jdk-${jre.version}.jdk/Contents/Home/ext/modules">
+				<patternset refid="pattern.jre" />
+				<cutdirsmapper dirs="1" />
+			</unzip>
+		</sequential>
+	</macrodef>
+
+
+	<macrodef name="get-linux-jre" description="Fetch and unpack JRE bundle (64-bit Linux)">
+		<attribute name="dest" />
+		<sequential>
+			<exec executable="/bin/sh" dir="${dir.cache}" failonerror="no">
+				<arg line="get-java.sh" />
+			</exec>
+			<untar src="${dir.cache}/openjdk-${jre.version}_linux-x64_bin.tar.gz" dest="@{dest}" compression="gzip">
+				<patternset refid="pattern.jre" />
+				<cutdirsmapper dirs="1" />
+			</untar>
+			<exec executable="/bin/sh" dir="${dir.cache}" failonerror="no">
+				<arg line="get-jfx.sh" />
+			</exec>
+			<unzip src="${dir.cache}/openjfx-${jfx.version}_linux-x64_bin-sdk.zip" dest="@{dest}/ext/modules">
+				<patternset refid="pattern.jre" />
+				<cutdirsmapper dirs="1" />
+			</unzip>
+		</sequential>
+	</macrodef>
+
+	<!-- Check Current OS for Proper Java & JavaFX Downloads-->
+	<!-- first create our properties -->
+	<condition property="isMac">
+		<os family="mac" />
+	</condition>
+
+	<condition property="isWindows">
+		<os family="windows" />
+	</condition>
+
+	<condition property="isUnixButNotMacOsX">
+	<and>
+		<os family="unix"/>
+
+		<not>
+			<os family="mac"/>
+		</not>
+
+	</and>
+	</condition>
+
+	<!-- now create our operating system specific targets -->
+	<target name="doMac" if="isMac">
+		<echo message="Current OS: MacOS" />
+		<get-macos-jre dest="${basedir}/cache" />
+		<unzip src="${dir.cache}/openjfx-${jfx.version}_osx-x64_bin-sdk.zip" dest="${basedir}/cache" />
+	</target>
+
+	<target name="doWindows" if="isWindows">
+		<echo message="Current OS: Windows" />
+		<echo message="Downloading Java Dependencies" />
+		<get-windows-jre dest="${basedir}/cache" />
+		<unzip src="${dir.cache}/openjfx-${jfx.version}_windows-x64_bin-sdk.zip" dest="${basedir}/cache" />
+	</target>
+
+	<target name="doUnix" if="isUnixButNotMacOsX">
+		<echo message="Current OS: Unix/Linux" />
+		<get-linux-jre dest="${basedir}/cache" />
+		<unzip src="${dir.cache}/openjfx-${jfx.version}_linux-x64_bin-sdk.zip" dest="${basedir}/cache" />
+	</target>
+
+	<!-- run everything from our main target -->
+	<!-- the other targets will only be run when their properties are true -->
+	<target name="OS-Test" depends="doMac, doWindows, doUnix">
+		<echo message="Getting OS Details" />
+		<echo message="os.name = ${os.name}" />
+		<echo message="os.arch = ${os.arch}" />
+		<echo message="os.version = ${os.version}" />
+	</target>
+
+	<!-- End of OS checks -->
+
+
+	<macrodef name="create-app-bundle" description="Create macOS app bundle folder structure">
+		<attribute name="dir" />
+		<attribute name="deployment" />
+		<attribute name="runtime" />
+		<attribute name="license" />
+		<attribute name="identifier" />
+		<element name="options" implicit="yes" optional="yes" />
+		<sequential>
+			<get-macos-jre dest="@{dir}" if:true="@{runtime}" />
+			<bundleapp jvmrequired="${jvm.version}" minimumsystemversion="${mac.version}" outputdirectory="@{dir}" executablename="${package.name}.launcher" name="${application.name}" displayname="${application.name}.launcher" version="${revision}" shortversion="${application.version}" identifier="@{identifier}" mainclassname="${main.class}" icon="${dir.installer}/icons/${package.name}.icns" copyright="${tstamp.year} ${package.company}" applicationcategory="${mac.application.category}" highresolutioncapable="true" supportsautomaticgraphicsswitching="true">
+				<arch name="x86_64" />
+
+				<runtime dir="@{dir}/jdk-${jre.version}.jdk/Contents/Home" if:true="@{runtime}">
+					<include name="**/*" />
+				</runtime>
+
+				<classpath dir="${dir.dist}/lib" />
+				<librarypath dir="${dir.lib}/native/mac-x86_64" />
+
+				<option value="--module-path" />
+				<option value="$APP_ROOT/Contents/PlugIns/jdk-${jre.version}.jdk/Contents/Home/ext/modules/lib" />
+				<option value="--add-modules" />
+				<option value="ALL-MODULE-PATH" />
+
+				<!-- include command-line tools -->
+				<librarypath dir="@{dir}">
+					<include name="*.sh" />
+				</librarypath>
+
+				<bundledocument role="viewer" handlerRank="none" contentTypes="public.movie" name="Video file" />
+				<bundledocument role="viewer" handlerRank="none" contentTypes="public.audio" name="Audio file" />
+				<bundledocument role="viewer" handlerRank="none" contentTypes="public.folder" name="Media folder" />
+
+				<option value="-Dunixfs=false" />
+				<option value="-DuseExtendedFileAttributes=true" />
+				<option value="-DuseCreationDate=false" />
+				<option value="-Djava.net.useSystemProxies=true" />
+
+				<option value="-Djna.nosys=true" />
+				<option value="-Djna.nounpack=true" />
+
+				<option value="-Djna.boot.library.name=jnidispatch" />
+				<option value="-Djna.boot.library.path=$APP_ROOT/Contents/MacOS" />
+				<option value="-Djna.library.path=$APP_ROOT/Contents/MacOS" />
+				<option value="-Djava.library.path=$APP_ROOT/Contents/MacOS" />
+				<option value="-Dnet.filebot.AcoustID.fpcalc=$APP_ROOT/Contents/MacOS/fpcalc" />
+
+				<option value="-Dnet.filebot.UserFiles.fileChooser=COCOA" />
+				<option value="-Dapple.awt.application.name=${application.name}" />
+				<option value="-Dapple.laf.useScreenMenuBar=true" />
+				<option value="-Dfile.encoding=UTF-8" />
+
+				<!-- MAS does not support or allow command-line applications and may run executables with strange arguments for no apparent reason (e.g. filebot.launcher -psn_0_774333) so we ignore arguments completely in this case -->
+				<option value="-Dapple.app.launcher=true" />
+				<option value="-Dapple.app.workflows=$APP_ROOT/Contents/Workflows" />
+
+				<!-- libjfxwebkit.dylib cannot be deployed on the MAS due to deprecated dependencies -->
+				<option value="-Dapplication.deployment=@{deployment}" />
+
+				<!-- associate with *.psm files -->
+				<bundledocument extensions="${license.extension}" icon="${dir.installer}/icons/filebot.icns" name="${license.description}" role="viewer" handlerRank="owner" contentTypes="net.filebot.license" if:true="@{license}" />
+				<typedeclaration extensions="${license.extension}" icon="${dir.installer}/icons/filebot.icns" description="${license.description}" conformsTo="public.plain-text" identifier="net.filebot.license" mimeTypes="${license.mimetype}" if:true="@{license}" />
+
+				<!-- include custom macro options -->
+				<options />
+			</bundleapp>
+
+			<!-- include workflows -->
+			<copy todir="${dir.staging}/${application.name}.app/Contents/Workflows">
+				<fileset dir="${dir.installer}/workflows" />
+			</copy>
+
+			<!-- fix permissions -->
+			<chmod perm="+x" verbose="yes">
+				<fileset dir="${dir.staging}/${application.name}.app">
+					<include name="**/*.launcher" />
+					<include name="**/*.sh" />
+					<include name="**/jspawnhelper" />
+					<include name="**/java" />
+				</fileset>
+			</chmod>
+		</sequential>
+	</macrodef>
+
+
+	<target name="jar" depends="revision, OS-Test">
+		<!-- add missing slf4j-api file -->
+    <copy file="${basedir}/cache/slf4j-api.jar" todir="${basedir}/lib/ivy/jar" />
+
+		<!-- static resources -->
+		<jar destfile="${dir.dist}/lib/${package.name}-resources.jar" index="yes" indexMetaInf="yes" compress="no">
+			<fileset dir="${dir.source}" includes="**/*.png" />
+		</jar>
+
+		<!-- select jar dependencies -->
+		<fileset id="jar.classpath" dir="${dir.lib}" includesfile="${dir.lib}/jar.includes" />
+
+		<!-- rebuild each dependency jar with zero compression and remove signatures -->
+		<groovy src="${dir.lib}/jar.groovy" />
+
+		<path id="jar.classpath">
+			<fileset dir="${dir.dist}/lib">
+				<include name="*.jar" />
+			</fileset>
+		</path>
+		<manifestclasspath property="jar.classpath" jarfile="${dir.dist}/lib/${package.name}.jar">
+			<classpath refid="jar.classpath" />
+		</manifestclasspath>
+
+		<!-- compile -->
+		<javac srcdir="${dir.source}" destdir="${dir.build}" release="${jvm.version}" encoding="utf-8" debug="yes" includeAntRuntime="no">
+			<classpath refid="jar.classpath" />
+			<modulepath path="${jfx.path}" />
+			<compilerarg line="--add-modules ALL-MODULE-PATH" />
+		</javac>
+
+		<!-- copy resources -->
+		<copy todir="${dir.build}" includeemptydirs="no">
+			<fileset dir="${dir.source}">
+				<exclude name="**/*.java" />
+				<exclude name="**/*.png" />
+				<exclude name="**/*.properties" />
+			</fileset>
+		</copy>
+
+		<!-- copy property files -->
+		<copy-replace todir="${dir.build}">
+			<fileset dir="${dir.source}" includes="**/*.properties" />
+		</copy-replace>
+
+		<jar destfile="${dir.dist}/lib/${package.name}.jar" index="yes" indexMetaInf="yes" compress="no">
+			<fileset dir="${dir.build}" />
+			<manifest>
+				<attribute name="Main-Class" value="${main.class}" />
+				<attribute name="Class-Path" value="${jar.classpath}" />
+				<attribute name="Build-Date" value="${tstamp.date}" />
+				<attribute name="Build-Revision" value="${revision}" />
+			</manifest>
+			<indexjars refid="jar.classpath" />
+		</jar>
+	</target>
+
+
+	<target name="appx" depends="revision" description="Build Windows 10 package">
+		<property name="appx.arch" value="x64" />
+
+		<property name="dir.staging" location="${dir.dist}/appx/${appx.arch}" />
+
+		<copy todir="${dir.staging}">
+			<fileset dir="${dir.installer}/msi/${appx.arch}" includes="*.exe" />
+		</copy>
+		<copy todir="${dir.staging}/lib">
+			<fileset dir="${dir.lib}/native/win32-${appx.arch}" />
+		</copy>
+		<copy todir="${dir.staging}/jar">
+			<fileset dir="${dir.dist}/lib" includes="*.jar" />
+		</copy>
+		<copy todir="${dir.staging}">
+			<fileset dir="${dir.installer}/appx" includes="**/*.png" />
+		</copy>
+
+		<!-- copy files and resolve ant variables -->
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/appx" includes="*.xml, *.ini" />
+		</copy-replace>
+
+		<!-- fetch latest JRE -->
+		<get-windows-jre dest="${dir.staging}/jre" />
+
+		<!-- package APPX -->
+		<exec executable="makepri" dir="${dir.staging}" failonerror="yes">
+			<arg line="createconfig /o /pv 10.0.0 /cf priconfig.xml /dq en-US" />
+		</exec>
+		<exec executable="makepri" dir="${dir.staging}" failonerror="yes">
+			<arg line="new /o /pr . /cf priconfig.xml /in ${microsoft.application.name}" />
+		</exec>
+		<exec executable="makeappx" dir="${dir.dist}" failonerror="yes">
+			<arg line="pack /v /o /d ${dir.staging} /p ${release}_r${revision}_${appx.arch}.appx" />
+		</exec>
+	</target>
+
+
+	<target name="msi" depends="revision" description="Build Windows Installer package">
+		<property name="msi.package.platform" value="x64" />
+		<property name="msi.directory.id" value="ProgramFiles64Folder" />
+		<property name="msi.component.win64" value="yes" />
+
+		<property name="dir.staging" location="${dir.dist}/msi/${msi.package.platform}" />
+
+		<!-- 1. prepare application files for heat harvest -->
+		<get-windows-jre dest="${dir.staging}/base/jre" />
+
+		<copy todir="${dir.staging}/base/jar">
+			<fileset dir="${dir.dist}/lib" includes="*.jar" />
+		</copy>
+		<copy todir="${dir.staging}/base/lib">
+			<fileset dir="${dir.lib}/native/win32-${msi.package.platform}" />
+		</copy>
+
+		<exec executable="heat" dir="${dir.staging}" failonerror="true">
+			<arg line="dir base -v -srd -gg -dr ApplicationBase -cg ApplicationBase -template fragment -sreg -sfrag -scom -out base.wxs" />
+		</exec>
+		<exec executable="candle" dir="${dir.staging}" failonerror="true">
+			<arg line="base.wxs -out base.wixobj" />
+		</exec>
+
+
+		<!-- 2. prepare installer files and application stub for candle light -->
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/msi" includes="*.wix, *.ini" />
+		</copy-replace>
+		<exec executable="candle" dir="${dir.staging}" failonerror="true">
+			<arg line="filebot.wix -out filebot.wixobj" />
+		</exec>
+
+		<!-- 3. compile MSI package (use -b to add additional resource folders) -->
+		<exec executable="light" dir="${dir.staging}" failonerror="true">
+			<arg line="filebot.wixobj base.wixobj -b base -b ${dir.installer}/msi/${msi.package.platform} -b ${dir.installer}/msi -sval -ext WixUIExtension -out ${dir.dist}/${release}_${msi.package.platform}.msi" />
+		</exec>
+	</target>
+
+
+	<target name="zip" depends="revision" description="Build Windows Portable ZIP package">
+		<property name="dir.staging" location="${dir.dist}/zip" />
+
+		<get-windows-jre dest="${dir.staging}/jre" />
+
+		<copy todir="${dir.staging}">
+			<fileset dir="${dir.installer}/msi/x64" includes="*.exe" />
+		</copy>
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/zip" includes="*.ini" />
+		</copy-replace>
+
+		<zip destfile="${dir.dist}/${release}-portable.zip" encoding="utf-8">
+			<zipfileset dir="${dir.staging}" />
+			<zipfileset prefix="jar" dir="${dir.dist}/lib" />
+			<zipfileset prefix="lib" dir="${dir.lib}/native/win32-x64" />
+		</zip>
+	</target>
+
+
+	<target name="mas" depends="revision" description="Build MAS package">
+		<property name="dir.staging" location="${dir.dist}/mas" />
+
+		<property name="path.app" location="${dir.staging}/${application.name}.app" />
+		<property name="path.pkg" location="${dir.staging}/${application.name}_${application.version}_r${revision}.pkg" />
+
+		<create-app-bundle dir="${dir.staging}" deployment="mas" runtime="yes" license="no" identifier="${package.identifier}">
+			<option value="-Dapplication.update=skip" />
+
+			<!-- WORKING_DIR is sandbox data folder -->
+			<option value="-Dapplication.dir=Library/Application Support/User Data" />
+			<option value="-Dapplication.cache=Library/Caches/ehcache.disk.store" />
+			<option value="-Djava.io.tmpdir=Library/Caches/java.io.tmpdir" />
+		</create-app-bundle>
+
+		<!-- strip bundle from unused resources -->
+		<delete verbose="yes" includeEmptyDirs="yes">
+			<fileset dir="${path.app}">
+				<include name="**/Workflows/**" />
+				<include name="**/bin/**" />
+				<include name="**/*.lproj/**" />
+				<exclude name="**/en.lproj/**" />
+			</fileset>
+		</delete>
+
+		<property name="path.app.jre" location="${path.app}/Contents/PlugIns/jdk-${jre.version}.jdk" />
+
+		<!-- MAS validation is a bit buggy and requires even libraries and frameworks to have a unique CFBundleIdentifier Collision -->
+		<replace file="${path.app.jre}/Contents/Info.plist" token="net.java.openjdk.${jre.version}.jdk" value="${package.identifier}.jdk" encoding="UTF-8" summary="true" />
+
+		<!-- fix broken symlink -->
+		<copy file="${dir.staging}/jdk-${jre.version}.jdk/Contents/Home/lib/jli/libjli.dylib" tofile="${path.app.jre}/Contents/MacOS/libjli.dylib" overwrite="yes" verbose="yes" failonerror="yes" />
+
+		<!-- fix permissions (fpcalc and jspawnhelper be executable and signed with inherit entitlements) -->
+		<chmod perm="+x">
+			<fileset dir="${path.app}">
+				<include name="**/jspawnhelper" />
+				<include name="**/fpcalc" />
+				<include name="**/*.sh" />
+			</fileset>
+		</chmod>
+
+		<!-- JRE sign all jars, dylibs and executables -->
+		<property name="sign" value="--verbose --force --sign '3rd Party Mac Developer Application: ${package.company}'" />
+		<property name="entitlements" value="--entitlements '${dir.installer}/mas/FileBot.entitlements'" />
+		<property name="entitlements.inherit" value="--entitlements '${dir.installer}/mas/inherit.entitlements'" />
+
+		<!-- sign helper tools with inherit entitlements -->
+		<apply executable="codesign" parallel="yes" failonerror="yes">
+			<arg line="${sign} ${entitlements.inherit}" />
+			<fileset dir="${path.app}">
+				<include name="**/jspawnhelper" />
+				<include name="**/fpcalc" />
+				<include name="**/*.dylib" />
+				<include name="**/*.jar" />
+				<include name="**/*.sh" />
+			</fileset>
+		</apply>
+
+		<!-- sign frameworks -->
+		<exec executable="codesign" failonerror="yes">
+			<arg line="${sign} ${entitlements.inherit} '${path.app.jre}'" />
+		</exec>
+
+		<!-- sign app -->
+		<exec executable="codesign" failonerror="yes">
+			<arg line="${sign} ${entitlements} '${path.app}'" />
+		</exec>
+
+		<!-- verify signature -->
+		<exec executable="codesign" failonerror="yes">
+			<arg line="--verbose --deep --verify '${path.app}'" />
+		</exec>
+
+		<!-- build package -->
+		<exec executable="productbuild" failonerror="yes">
+			<arg line="--component '${path.app}' /Applications '${path.pkg}' --sign '3rd Party Mac Developer Installer: ${package.company}'" />
+		</exec>
+
+		<!-- store as release build-->
+		<copy todir="${dir.release}" file="${path.pkg}" verbose="yes" />
+	</target>
+
+
+	<target name="app" depends="revision" description="Build macOS app bundle">
+		<property name="dir.staging" location="${dir.dist}/app" />
+
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/app" />
+		</copy-replace>
+
+		<create-app-bundle dir="${dir.staging}" deployment="app" runtime="yes" license="yes" identifier="${package.identifier}.app" />
+
+		<tar destfile="${dir.dist}/${release}.app.tar.xz" compression="${tar.compression}" longfile="posix" encoding="utf-8">
+			<tarfileset dir="${dir.staging}">
+				<include name="*.app/**" />
+				<exclude name="*.app/**/MacOS/filebot.*" />
+				<exclude name="*.app/**/MacOS/fpcalc" />
+				<exclude name="*.app/**/lib/jspawnhelper" />
+				<exclude name="*.app/**/bin/*" />
+			</tarfileset>
+			<tarfileset dir="${dir.staging}" filemode="755">
+				<include name="*.app/**/MacOS/filebot.*" />
+				<include name="*.app/**/MacOS/fpcalc" />
+				<include name="*.app/**/lib/jspawnhelper" />
+				<include name="*.app/**/bin/*" />
+			</tarfileset>
+		</tar>
+		<exec executable="/bin/sh" dir="${dir.cache}" failonerror="yes">
+			<arg line="filebot-dmg.sh" />
+		</exec>
+	</target>
+
+
+	<target name="pkg" depends="revision" description="Build macOS installer package">
+		<property name="dir.staging" location="${dir.dist}/pkg" />
+
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/pkg" />
+		</copy-replace>
+
+		<create-app-bundle dir="${dir.staging}" deployment="pkg" runtime="yes" license="yes" identifier="${package.identifier}.pkg" />
+
+		<!-- fix permissions -->
+		<chmod perm="+x" verbose="yes">
+			<fileset dir="${dir.staging}/scripts" />
+		</chmod>
+
+		<exec executable="pkgbuild" dir="${dir.staging}" failonerror="yes">
+			<arg line="${package.name}.pkg --install-location /Applications --component ${dir.dist}/pkg/${application.name}.app --scripts scripts" />
+		</exec>
+		<exec executable="productbuild" dir="${dir.staging}" failonerror="yes">
+			<arg line="${dir.dist}/${release}.pkg --distribution distribution.xml --package-path" />
+		</exec>
+	</target>
+
+
+	<target name="deb" depends="revision" description="Build Debian package">
+		<property name="dir.staging" location="${dir.dist}/deb" />
+
+		<get-linux-jre dest="${dir.staging}/jre" />
+
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/deb" />
+		</copy-replace>
+
+		<jdeb destfile="${dir.dist}/${application.name}_${application.version}_amd64.deb" control="${dir.staging}/control" compression="${tar.compression}" verbose="true">
+			<tarfileset prefix="/usr/share/filebot/bin" dir="${dir.staging}" includes="*.sh" filemode="755" />
+			<tarfileset prefix="/usr/share/filebot/mod" dir="${dir.staging}/jre/ext/modules/lib" />
+			<tarfileset prefix="/usr/share/filebot/jar" dir="${dir.dist}/lib" />
+			<tarfileset prefix="/usr/share/filebot/lib" dir="${dir.lib}/native/linux-amd64" />
+
+			<tarfileset prefix="/usr/share/icons/hicolor/scalable/apps" dir="${dir.installer}/icons" includes="filebot.svg" />
+			<tarfileset prefix="/usr/share" dir="${dir.staging}/share" />
+		</jdeb>
+	</target>
+
+
+	<target name="deb-universal" depends="revision" description="Build Universal Debian package">
+		<property name="dir.staging" location="${dir.dist}/deb-universal" />
+
+		<!-- use Debian package structure -->
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/deb" />
+		</copy-replace>
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/deb-universal" />
+		</copy-replace>
+
+		<jdeb destfile="${dir.dist}/${application.name}_${application.version}_universal.deb" control="${dir.staging}/control" compression="${tar.compression}" verbose="true">
+			<tarfileset prefix="/usr/share/filebot/bin" dir="${dir.staging}" includes="*.sh" filemode="755" />
+			<tarfileset prefix="/usr/share/filebot/jar" dir="${dir.dist}/lib" />
+
+			<tarfileset prefix="/usr/share/icons/hicolor/scalable/apps" dir="${dir.installer}/icons" includes="filebot.svg" />
+			<tarfileset prefix="/usr/share" dir="${dir.staging}/share" />
+		</jdeb>
+	</target>
+
+
+	<target name="snap" depends="revision" description="Build Ubuntu SNAP package">
+		<property name="dir.staging" location="${dir.dist}/snap" />
+		<property name="dir.base" location="${dir.staging}/base" />
+
+		<!-- copy files and resolve ant variables -->
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/snap" />
+		</copy-replace>
+
+		<copy todir="${dir.base}/filebot/jar">
+			<fileset dir="${dir.dist}/lib" includes="*.jar" />
+		</copy>
+		<copy todir="${dir.base}/filebot/lib">
+			<fileset dir="${dir.lib}/native/linux-amd64" includes="${deb.jna.depends}" />
+		</copy>
+		<chmod perm="+x" verbose="yes">
+			<fileset dir="${dir.base}" includes="**/bin/**" />
+		</chmod>
+
+		<exec executable="snapcraft" dir="${dir.staging}" failonerror="yes" />
+	</target>
+
+
+	<target name="tar" depends="revision" description="Build Linux Portable TAR package">
+		<property name="dir.staging" location="${dir.dist}/tar" />
+
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/tar" includes="*.sh" />
+		</copy-replace>
+
+		<tar destfile="${dir.dist}/${release}-portable.tar.xz" compression="${tar.compression}" longfile="posix" encoding="utf-8">
+			<tarfileset dir="${dir.staging}" includes="*.sh" filemode="755" />
+			<tarfileset prefix="jar" dir="${dir.dist}/lib" />
+
+			<!-- include native libraries for all supported platforms -->
+			<tarfileset prefix="lib/Linux-armv7l" dir="${dir.lib}/native/linux-armv7l" includes="*.so" />
+			<tarfileset prefix="lib/Linux-aarch64" dir="${dir.lib}/native/linux-armv8" includes="*.so" />
+			<tarfileset prefix="lib/Linux-i686" dir="${dir.lib}/native/linux-i686" includes="*.so" />
+			<tarfileset prefix="lib/Linux-x86_64" dir="${dir.lib}/native/linux-amd64" includes="*.so" />
+			<tarfileset prefix="lib/FreeBSD-amd64" dir="${dir.lib}/native/freebsd-amd64" includes="*.so" />
+
+			<!-- include maintainer public key -->
+			<tarfileset dir="${dir.installer}/gpg" includes="maintainer.gpg" />
+		</tar>
+	</target>
+
+
+	<target name="aur" depends="revision" description="Build Arch Linux TAR package for AUR">
+		<property name="dir.staging" location="${dir.dist}/aur" />
+
+		<!-- use Debian package structure -->
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/deb" />
+		</copy-replace>
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/aur" />
+		</copy-replace>
+
+		<tar destfile="${dir.dist}/${application.name}_${application.version}-aur.tar.xz" compression="${tar.compression}" longfile="posix" encoding="utf-8">
+			<tarfileset prefix="/usr/share/filebot/bin" dir="${dir.staging}" includes="*.sh" filemode="755" />
+			<tarfileset prefix="/usr/share/filebot/jar" dir="${dir.dist}/lib" />
+
+			<tarfileset prefix="/usr/share/filebot/lib/x86_64" dir="${dir.lib}/native/linux-amd64" includes="${deb.jna.depends}" />
+			<tarfileset prefix="/usr/share/filebot/lib/i686" dir="${dir.lib}/native/linux-i686" includes="${deb.jna.depends}" />
+			<tarfileset prefix="/usr/share/filebot/lib/aarch64" dir="${dir.lib}/native/linux-armv8" includes="${deb.jna.depends}" />
+			<tarfileset prefix="/usr/share/filebot/lib/armv7l" dir="${dir.lib}/native/linux-armv7l" includes="${deb.jna.depends}" />
+
+			<tarfileset prefix="/usr/share/icons/hicolor/scalable/apps" dir="${dir.installer}/icons" includes="filebot.svg" />
+			<tarfileset prefix="/usr/share" dir="${dir.staging}/share" />
+		</tar>
+	</target>
+
+
+
+	<target name="spk" depends="revision" description="Build Synology NAS package">
+		<property name="dir.staging" location="${dir.dist}/spk" />
+
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/spk" />
+		</copy-replace>
+
+		<spk destdir="${dir.dist}" name="${package.name}" version="${application.version}" arch="noarch" compression="${tar.compression}">
+			<info name="displayname" value="${application.name}" />
+			<info name="description" value="${package.description}" />
+			<info name="maintainer" value="${package.project}" />
+			<info name="maintainer_url" value="${package.homepage}" />
+			<info name="distributor" value="${package.project}" />
+			<info name="distributor_url" value="${package.homepage}" />
+			<info name="support_url" value="${link.help.synology}" />
+			<info name="helpurl" value="${link.help.manpage}" />
+			<info name="firmware" value="6.0" />
+			<info name="startable" value="no" />
+			<info name="silent_install" value="yes" />
+			<info name="silent_uninstall" value="yes" />
+			<info name="silent_upgrade" value="yes" />
+			<info name="thirdparty" value="yes" />
+
+			<!-- Dependencies are troublesome for some users because they cannot be skipped or ignored (i.e. DSM does not support optional or recommended dependencies) -->
+			<!-- <info name="start_dep_services" value="ssh" /> -->
+			<!-- <info name="install_dep_packages" value="oracle-java" /> -->
+
+			<icon size="72" file="${dir.installer}/icons/icon72.png" />
+			<icon size="256" file="${dir.installer}/icons/icon256.png" />
+
+			<scripts dir="${dir.staging}/scripts" filemode="755" />
+			<package dir="${dir.staging}/package" includes="*.sh" filemode="755" />
+			<package prefix="jar" dir="${dir.dist}/lib" includes="*.jar" />
+
+			<!-- include native libraries for all supported platforms -->
+			<package prefix="lib/armv7l" dir="${dir.lib}/native/linux-armv7l" includes="*.so" />
+			<package prefix="lib/aarch64" dir="${dir.lib}/native/linux-armv8" includes="*.so" />
+			<package prefix="lib/i686" dir="${dir.lib}/native/linux-i686" includes="*.so" />
+			<package prefix="lib/x86_64" dir="${dir.lib}/native/linux-amd64" includes="*.so" />
+
+			<codesign secring="${dir.installer}/gpg/syno.gpg" keyid="${gpg.key}" password="${gpg.pwd}" />
+		</spk>
+
+		<move file="${dir.dist}/${package.name}-${application.version}-noarch.spk" tofile="${dir.dist}/${release}.spk" />
+	</target>
+
+
+	<target name="qpkg" depends="revision" description="Build QNAP NAS Package">
+		<property name="dir.staging" location="${dir.dist}/qpkg" />
+		<property name="dir.base" location="${dir.dist}/qpkg/shared" />
+
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/qpkg">
+				<include name="**/*.sh" />
+				<include name="**/*.cfg" />
+				<include name="**/package_routines" />
+			</fileset>
+		</copy-replace>
+		<copy todir="${dir.staging}">
+			<fileset dir="${dir.installer}/qpkg">
+				<include name="**/*.png" />
+			</fileset>
+		</copy>
+
+		<copy todir="${dir.base}/jar">
+			<fileset dir="${dir.dist}/lib" includes="*.jar" />
+		</copy>
+
+		<!-- include native libraries for all supported platforms -->
+		<copy todir="${dir.base}/lib/armv7l">
+			<fileset dir="${dir.lib}/native/linux-armv7l" />
+		</copy>
+		<copy todir="${dir.base}/lib/aarch64">
+			<fileset dir="${dir.lib}/native/linux-armv8" />
+		</copy>
+		<copy todir="${dir.base}/lib/i686">
+			<fileset dir="${dir.lib}/native/linux-i686" />
+		</copy>
+		<copy todir="${dir.base}/lib/x86_64">
+			<fileset dir="${dir.lib}/native/linux-amd64" />
+		</copy>
+
+		<!-- overwrite native libraries with QNAP compatible ones -->
+		<copy todir="${dir.staging}" overwrite="yes">
+			<fileset dir="${dir.installer}/qpkg">
+				<include name="**/*.so" />
+			</fileset>
+		</copy>
+
+		<!-- fix execute permissions -->
+		<chmod verbose="yes" perm="+x">
+			<fileset dir="${dir.base}" includes="**/*.sh" />
+			<fileset dir="${dir.base}" includes="**/fpcalc" />
+		</chmod>
+
+		<exec executable="docker" failonerror="yes">
+			<arg line="run --rm -v ${dir.staging}:/src rednoah/qpkg-build --7zip" />
+		</exec>
+		<copy file="${dir.staging}/build/${package.name}_${application.version}.qpkg" tofile="${dir.dist}/${release}.qpkg" />
+	</target>
+
+
+	<target name="clean" description="Delete build artifacts">
+		<delete dir="${dir.dist}" />
+		<delete dir="${dir.build}" />
+	</target>
+
+
+	<target name="revision" depends="init">
+		<exec executable="git" outputproperty="revision" failonerror="true">
+			<arg line="rev-list --count master" />
+		</exec>
+		<echo>Revision: ${revision}</echo>
+	</target>
+
+
+	<target name="init">
+		<mkdir dir="${dir.build}" />
+		<mkdir dir="${dir.dist}" />
+		<mkdir dir="${dir.release}" />
+		<mkdir dir="${dir.cache}" />
+
+		<path id="lib.classpath">
+			<fileset dir="${dir.lib}" includes="**/*.jar" excludes="**/*-jdk14.jar" />
+		</path>
+		<taskdef resource="org/codehaus/groovy/antlib.xml" classpathref="lib.classpath" />
+		<taskdef resource="net/filebot/ant/spk/antlib.xml" classpathref="lib.classpath" />
+		<taskdef resource="org/vafer/jdeb/ant/antlib.xml" classpathref="lib.classpath" />
+		<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask" classpathref="lib.classpath" />
+	</target>
+
+
+	<target name="stage" description="Stage release files">
+		<mkdir dir="${dir.release}" />
+
+		<patternset id="release.files">
+			<include name="*.msi" />
+			<include name="*.zip" />
+			<include name="*.pkg" />
+			<include name="*.deb" />
+			<include name="*.tar.xz" />
+			<include name="*.spk" />
+			<include name="*.qpkg" />
+		</patternset>
+		<patternset id="verification.files">
+			<include name="*.asc" />
+			<include name="*.sha256" />
+		</patternset>
+
+		<!-- add *.asc files -->
+		<release-sign>
+			<fileset dir="${dir.dist}">
+				<patternset refid="release.files" />
+			</fileset>
+		</release-sign>
+
+		<!-- add *.sha256 files -->
+		<checksum algorithm="SHA-256" pattern="{0}" fileext=".sha256">
+			<fileset dir="${dir.dist}">
+				<patternset refid="release.files" />
+			</fileset>
+		</checksum>
+
+		<!-- normalize Windows / Linux EOL -->
+		<fixcrlf srcdir="${dir.dist}" eol="unix" eof="remove" encoding="utf-8">
+			<patternset refid="verification.files" />
+		</fixcrlf>
+
+		<!-- move to release folder -->
+		<touch datetime="now">
+			<fileset dir="${dir.dist}">
+				<patternset refid="release.files" />
+				<patternset refid="verification.files" />
+			</fileset>
+		</touch>
+		<move todir="${dir.release}" verbose="yes" flatten="yes" overwrite="yes" preservelastmodified="yes">
+			<fileset dir="${dir.dist}">
+				<patternset refid="release.files" />
+				<patternset refid="verification.files" />
+			</fileset>
+		</move>
+	</target>
+
+
+	<target name="stage-update" description="Upload incremental update archive">
+		<tar destfile="${dir.dist}/HEAD/CHANGES.tar.xz" compression="${tar.compression}" longfile="posix" encoding="utf-8">
+			<tarfileset src="${dir.dist}/${release}-portable.tar.xz" includesfile="${dir.installer}/tar/CHANGES.includes" />
+		</tar>
+		<antcall target="stage">
+			<param name="dir.dist" value="${dir.dist}/HEAD" />
+			<param name="dir.release" value="${dir.release.index}/HEAD" />
+		</antcall>
+	</target>
+
+
+	<target name="deploy-release" description="Upload release files">
+		<release-deploy dir="${dir.release.index}" todir="${scp.release}" />
+	</target>
+
+
+	<target name="deploy-chocolatey" description="Update Chocolatey Package Source">
+		<checksum property="x64.msi.sha256" file="${dir.release}/${release}_x64.msi" algorithm="SHA-256" />
+
+		<!-- replace variables for new release -->
+		<copy-replace todir="${dir.dist}/choco">
+			<fileset dir="${dir.installer}/choco">
+				<include name="**/*.ps1" />
+				<include name="**/*.nuspec" />
+			</fileset>
+		</copy-replace>
+
+		<!-- chocolatey pack and push -->
+		<exec executable="choco" dir="${dir.dist}/choco" failonerror="yes">
+			<arg line="pack" />
+		</exec>
+		<exec executable="choco" dir="${dir.dist}/choco" failonerror="yes">
+			<arg line="push ${package.name}.${application.version}.nupkg" />
+		</exec>
+	</target>
+
+
+	<target name="resolve" description="Retrieve dependencies with Apache Ivy">
+		<delete dir="${dir.lib}/ivy" />
+		<ivy:retrieve pattern="${dir.lib}/ivy/[type]/[artifact].[ext]" />
+
+		<antcall target="resolve-import-native">
+			<param name="arch" value="mac-x86_64" />
+			<param name="arch.jna" value="darwin" />
+			<param name="arch.7zj" value="Mac-x86_64" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="win32-x64" />
+			<param name="arch.jna" value="win32-x86-64" />
+			<param name="arch.7zj" value="Windows-amd64" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="win32-x86" />
+			<param name="arch.jna" value="win32-x86/" />
+			<param name="arch.7zj" value="Windows-x86" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="linux-amd64" />
+			<param name="arch.jna" value="linux-x86-64" />
+			<param name="arch.7zj" value="Linux-amd64" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="linux-i686" />
+			<param name="arch.jna" value="linux-x86" />
+			<param name="arch.7zj" value="Linux-i386" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="linux-armv7l" />
+			<param name="arch.jna" value="linux-arm" />
+			<param name="arch.7zj" value="linux-arm" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="linux-armv8" />
+			<param name="arch.jna" value="linux-aarch64" />
+			<param name="arch.7zj" value="linux-aarch64" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="freebsd-amd64" />
+			<param name="arch.jna" value="freebsd-x86-64" />
+			<param name="arch.7zj" value="FreeBSD-amd64" />
+		</antcall>
+
+		<!-- strip x86 and PPC native code from universal library -->
+		<exec executable="ditto" os="Mac OS X" dir="${dir.lib}/native/mac-x86_64">
+			<arg line="--arch x86_64 libjnidispatch.jnilib libjnidispatch.dylib" />
+		</exec>
+		<delete verbose="yes">
+			<fileset dir="${dir.lib}/native/mac-x86_64" includes="*.jnilib" />
+		</delete>
+	</target>
+
+
+	<target name="resolve-import-native">
+		<unzip src="${dir.lib}/ivy/jar/jna.jar" dest="${dir.lib}/native/${arch}" overwrite="yes">
+			<patternset>
+				<include name="**/${arch.jna}/*.dll" />
+				<include name="**/${arch.jna}/*.so" />
+				<include name="**/${arch.jna}/*.jnilib" />
+			</patternset>
+			<chainedmapper>
+				<flattenmapper />
+			</chainedmapper>
+		</unzip>
+
+		<unzip src="${dir.lib}/ivy/jar/sevenzipjbinding-all-platforms.jar" dest="${dir.lib}/native/${arch}" overwrite="yes">
+			<patternset>
+				<include name="**/${arch.7zj}/*.dll" />
+				<include name="**/${arch.7zj}/*.so" />
+				<include name="**/${arch.7zj}/*.dylib" />
+			</patternset>
+			<chainedmapper>
+				<flattenmapper />
+				<compositemapper>
+					<globmapper from="lib*.dll" to="*.dll" />
+					<identitymapper />
+				</compositemapper>
+			</chainedmapper>
+		</unzip>
+	</target>
+
+
+	<target name="eclipse-properties-builder">
+		<copy-replace todir="bin">
+			<fileset dir="source" includes="**/*.properties" />
+		</copy-replace>
+	</target>
+
+</project>

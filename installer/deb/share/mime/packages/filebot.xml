@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="@{license.mimetype}">
+    <comment>@{license.description}</comment>
+    <sub-class-of type="text/plain"/>
+    <generic-icon name="@{package.name}"/>
+    <glob pattern="*.@{license.extension}" />
+  </mime-type>
+</mime-info>

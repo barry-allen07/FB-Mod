@@ -1,0 +1,3 @@
+moduleName=filebot-format
+moduleVersion=2.5.4
+extensionClasses=net.filebot.cli.ScriptShellMethods,net.filebot.format.ExpressionFormatMethods

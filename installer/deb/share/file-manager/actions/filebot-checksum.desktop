@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Checksum
+Tooltip=Calculate checksum with FileBot
+Profiles=Media;
+
+[X-Action-Profile Media]
+Name=Checksum
+MimeTypes=@{deb.application.mimetype}
+Exec=filebot --mode SFV %F

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# import user data
+DATA_TAR="/tmp/$SYNOPKG_PKGNAME.data.tgz"
+
+cd "$SYNOPKG_PKGDEST" && tar -xvzf "$DATA_TAR" && rm "$DATA_TAR"
+
+exit 0

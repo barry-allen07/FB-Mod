@@ -1,0 +1,12 @@
+Package: @{package.name}
+Version: @{application.version}
+Architecture: all
+Maintainer: @{package.developer} <@{package.maintainer}>
+Description: @{package.synopsis}
+ @{package.description}
+Homepage: @{package.homepage}
+Section: utils
+Priority: extra
+Depends: openjdk-@{jvm.version}-jre
+Recommends: openjfx, libjna-jni, libmediainfo0v5, libchromaprint-tools, p7zip-full, p7zip-rar
+Enhances: nautilus-actions

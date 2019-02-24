@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+	xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+	xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+	xmlns:uap2="http://schemas.microsoft.com/appx/manifest/uap/windows10/2"
+	xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+	xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+	xmlns:rescap3="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities/3"
+	xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10">
+
+	<Identity
+		Name="@{microsoft.application.name}"
+		ProcessorArchitecture="@{appx.arch}"
+		Publisher="@{microsoft.application.publisher}"
+		Version="@{application.version}.0"
+	/>
+
+	<Properties>
+		<DisplayName>@{application.name}</DisplayName>
+		<PublisherDisplayName>@{package.company}</PublisherDisplayName>
+		<Description>@{package.description}</Description>
+		<Logo>Assets\StoreLogo.png</Logo>
+	</Properties>
+
+	<Resources>
+		<Resource Language="en-US" />
+	</Resources>
+
+	<Dependencies>
+		<TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17134.0" MaxVersionTested="10.0.17763.0" />
+	</Dependencies>
+
+	<Capabilities>
+		<rescap:Capability Name="runFullTrust" />
+	</Capabilities>
+
+	<Applications>
+		<Application Id="@{package.identifier}" Executable="filebot.launcher.exe" EntryPoint="Windows.FullTrustApplication">
+			<uap:VisualElements DisplayName="@{application.name}" Description="@{package.synopsis}" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" >
+				<uap:DefaultTile ShortName="@{application.name}" Wide310x150Logo="Assets\Wide310x150Logo.png" Square310x310Logo="Assets\Square310x310Logo.png" Square71x71Logo="Assets\Square71x71Logo.png">
+					<uap:ShowNameOnTiles>
+						<uap:ShowOn Tile="square150x150Logo" />
+						<uap:ShowOn Tile="wide310x150Logo" />
+						<uap:ShowOn Tile="square310x310Logo" />
+					</uap:ShowNameOnTiles>
+				</uap:DefaultTile>
+			</uap:VisualElements>
+			<Extensions>
+				<uap3:Extension Category="windows.appExecutionAlias" Executable="filebot.exe" EntryPoint="Windows.FullTrustApplication">
+					<uap3:AppExecutionAlias>
+						<desktop:ExecutionAlias Alias="filebot.exe" />
+					</uap3:AppExecutionAlias>
+				</uap3:Extension>
+				<uap3:Extension Category="windows.fileTypeAssociation">
+					<!--
+						File type associations and verbs for "reserved file types" such as .mp4 or .wmv are ignored unfortunately.
+
+						@see https://msdn.microsoft.com/en-us/windows/uwp/launch-resume/reserved-uri-scheme-names
+					-->
+					<uap3:FileTypeAssociation Name="media.association">
+						<uap:DisplayName>Media Files</uap:DisplayName>
+						<uap:Logo>Assets\Square44x44Logo.png</uap:Logo>
+						<uap:SupportedFileTypes>
+							<uap:FileType>.avi</uap:FileType>
+							<uap:FileType>.mkv</uap:FileType>
+							<uap:FileType>.mk3d</uap:FileType>
+							<uap:FileType>.ogg</uap:FileType>
+							<uap:FileType>.ogv</uap:FileType>
+							<uap:FileType>.mp4</uap:FileType>
+							<uap:FileType>.m4v</uap:FileType>
+							<uap:FileType>.mov</uap:FileType>
+							<uap:FileType>.divx</uap:FileType>
+							<uap:FileType>.mpg</uap:FileType>
+							<uap:FileType>.mpeg</uap:FileType>
+							<uap:FileType>.rec</uap:FileType>
+							<uap:FileType>.wmv</uap:FileType>
+							<uap:FileType>.rmvb</uap:FileType>
+							<uap:FileType>.rmp4</uap:FileType>
+							<uap:FileType>.tivo</uap:FileType>
+						</uap:SupportedFileTypes>
+						<uap2:SupportedVerbs>
+							<uap3:Verb MultiSelectModel="Player" Id="FileBotRename" Extended="true" Parameters="--mode Rename &quot;%1&quot;">Rename with @{application.name}</uap3:Verb>
+							<uap3:Verb MultiSelectModel="Player" Id="FileBotChecksum" Extended="true" Parameters="--mode SFV &quot;%1&quot;">Calculate Hash with @{application.name}</uap3:Verb>
+						</uap2:SupportedVerbs>
+					</uap3:FileTypeAssociation>
+				</uap3:Extension>
+				<rescap3:Extension Category="windows.desktopAppMigration">
+					<rescap3:DesktopAppMigration>
+						<rescap3:DesktopApp AumId="@{application.name}" />
+						<rescap3:DesktopApp ShortcutPath="%USERPROFILE%\Desktop\@{application.name}.lnk" />
+						<rescap3:DesktopApp ShortcutPath="%APPDATA%\Microsoft\Windows\Start Menu\Programs\@{application.name}.lnk" />
+						<rescap3:DesktopApp ShortcutPath="%APPDATA%\Microsoft\Windows\SendTo\@{application.name}.lnk" />
+					</rescap3:DesktopAppMigration>
+				</rescap3:Extension>
+			</Extensions>
+		</Application>
+	</Applications>
+
+</Package>
